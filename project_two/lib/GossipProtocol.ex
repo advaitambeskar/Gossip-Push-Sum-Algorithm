@@ -12,7 +12,9 @@ defmodule GossipProtocol do
     # Selecting the topology and then re-directing to the required function.
     # We are also initializing the actors as requested by the user.
 
+    # Generate the nodes
     # Generate the nodes and save their pid to allow neighborhood assignment.
+    # pidList stores the pid in form of
     pidList = for id <- 0..totalNodes-1 do
       # Initialize the nodes using a GenServer.
       # Have the few variables that maintain the states
@@ -21,9 +23,14 @@ defmodule GossipProtocol do
     end
     # Start Timing.
     startTime = :os.system_time(:millisecond);
-    # Generate the nodes.
+
+
     IO.puts startTime;
     IO.inspect pidList;
+
+    random_source = Enum.random(pidList);
+
+    IO.inspect random_source;
     # Generate the neighbour fields.
 
     # From the available pids, select a random node to become the source of the gossip.
