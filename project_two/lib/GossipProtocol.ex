@@ -3,7 +3,7 @@ defmodule GossipProtocol do
     The Gossip Protocol module defines the functionality required to successfully run the gossip protocol.
   """
 
-  use GenServer;
+  use GenServer
 
   def main(totalNodes, topology) do
     IO.puts("Total nodes are #{Integer.to_string(totalNodes)}");
@@ -17,7 +17,7 @@ defmodule GossipProtocol do
       # Initialize the nodes using a GenServer.
       # Have the few variables that maintain the states
       # like 'numberOfRumorsHeard', 'neighbors' and current 'process-id'
-      id
+      start_link(id, 0, :begin, []);
     end
     # Start Timing.
     startTime = :os.system_time(:millisecond);
@@ -60,8 +60,13 @@ defmodule GossipProtocol do
     #
 
     endTime = :os.system_time(:millisecond);
+    IO.puts(endTime - startTime)
+  end
+  def start_link(id, rumor_count, state, neighbor_pid) do
+    GenServer.start_link(__MODULE__, [id: id, rumor_count: rumor_count, state: state, neighbor_pid: neighbor_pid])
   end
 end
+
 
 defmodule Gossip do
   @moduledoc """
