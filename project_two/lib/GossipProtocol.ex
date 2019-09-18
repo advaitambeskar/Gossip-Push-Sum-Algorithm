@@ -5,6 +5,10 @@ defmodule GossipProtocol do
 
   use GenServer
 
+  def start_link(id, rumor_count, state, neighbor_pid) do
+    GenServer.start_link(__MODULE__, [id: id, rumor_count: rumor_count, state: state, neighbor_pid: neighbor_pid])
+  end
+
   def main(totalNodes, topology) do
     IO.puts("Total nodes are #{Integer.to_string(totalNodes)}");
     # IO.puts("The required topology is #{topology}");
@@ -68,9 +72,6 @@ defmodule GossipProtocol do
 
     endTime = :os.system_time(:millisecond);
     IO.puts(endTime - startTime)
-  end
-  def start_link(id, rumor_count, state, neighbor_pid) do
-    GenServer.start_link(__MODULE__, [id: id, rumor_count: rumor_count, state: state, neighbor_pid: neighbor_pid])
   end
 end
 
