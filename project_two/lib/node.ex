@@ -10,16 +10,16 @@ defmodule Actor do
     end
 
     def set_neighbors(pid, nbs) do
-        IO.inspect(pid)
-        IO.inspect(nbs)
+        # IO.inspect(pid)
+        # IO.inspect(nbs)
         GenServer.cast(pid, {:neighbor, nbs})
     end
 
     def recieve(pid, in_n, in_w) do
-        IO.puts ("recieved #{in_n}, #{in_w}")
-        IO.inspect(pid)
+        # IO.puts ("recieved #{in_n}, #{in_w}")
+        # IO.inspect(pid)
         :ok = GenServer.cast(pid, {:recieve, in_n, in_w}) 
-        IO.puts("ok")
+        # IO.puts("ok")
     end
 
     def handle_cast({:neighbor, nb_list}, state) do
@@ -28,8 +28,9 @@ defmodule Actor do
     end
 
     def handle_cast({:recieve, in_n, in_w}, state) do
-        IO.inspect(state)
+        # IO.inspect(state)
         [n: n, w: w, nbs: nbs, cnt: cnt, ppid: ppid] = state
+        IO.inspect([n, w, n/w])
         old_ratio = n/w
         [new_n, new_w] = [n + in_n, w + in_w]
         new_ratio = new_n / new_w
@@ -39,7 +40,7 @@ defmodule Actor do
             send(ppid, :finish)
             {:noreply, []}
         else
-            IO.inspect(state)
+            # IO.inspect(state)
             nb = Enum.random(nbs)
             :timer.sleep(Enum.random(0..10)); #TODO==================
             Actor.recieve(nb, new_n/2, new_w/2)     

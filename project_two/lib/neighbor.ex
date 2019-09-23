@@ -97,12 +97,12 @@ defmodule Neighbor do
                                                             -t+1<=z and z<=t and
                                                             x+y+z>=1 and x+y+z<=2 end)
                 
-                IO.inspect([u,v,w])
-                IO.inspect(nbs_idxes)
+                # IO.inspect([u,v,w])
+                # IO.inspect(nbs_idxes)
                 temp = Enum.map(nbs_idxes, fn x-> honeycomb_map[x] end)
-                IO.inspect(temp)
+                # IO.inspect(temp)
                 nbs = Enum.map(temp, fn x->Enum.at(pid_list, x) end)
-                IO.inspect(nbs)
+                # IO.inspect(nbs)
                 {:reply, nbs, state}
 
             "randhoneycomb" ->
@@ -113,14 +113,10 @@ defmodule Neighbor do
                                                             -t+1<=y and y<=t and
                                                             -t+1<=z and z<=t and
                                                             x+y+z>=1 and x+y+z<=2 end)
-                
-                IO.inspect([u,v,w])
-                IO.inspect(nbs_idxes)
+
                 temp = Enum.map(nbs_idxes, fn x-> honeycomb_map[x] end)
-                IO.inspect(temp)
                 nbs = Enum.map(temp, fn x->Enum.at(pid_list, x) end)
                 nbs = [Enum.random(pid_list) | nbs] 
-                IO.inspect(nbs)
                 {:reply, nbs, state}
 
               _ ->
