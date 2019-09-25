@@ -36,7 +36,7 @@ defmodule PushSumProtocol do
           node_num
         end
 
-      true -> node_num
+      _ -> node_num
     end
   end
 
@@ -63,6 +63,10 @@ defmodule PushSumProtocol do
     GenServer.call(pid, :start, :infinity)
   end
 
+  def handle_info(:finish, state) do
+    {:noreply, state}
+  end
+
   def handle_call(:start, _from, state) do
     [_, pid_list] = state
     
@@ -70,10 +74,22 @@ defmodule PushSumProtocol do
     node_pid = Enum.random(pid_list)
     # IO.inspect(node_pid)
     Actor.recieve(node_pid, 0, 0)
-    receive do
-      :finish -> :ok
-    end  
 
+    receive do
+      {:finish, _} -> :firstone_converged
+    end
+
+
+    Enum.reduce_while(1..length(pid_list)-1, 0, fn i, _ ->
+      receive do
+        {:finish, _} -> {:cont, 0}
+        after 5000 -> {:halt, 0}
+      end
+    end)
+    Process.flag(:trap_exit, true)
+
+    
+    
     {:reply, [], state}
   end
 
