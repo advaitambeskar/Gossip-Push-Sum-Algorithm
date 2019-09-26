@@ -184,9 +184,9 @@ defmodule GossipProtocol do
 
     # Have a general module which is responsible only for generating neighbor connections
     # I have no idea how to make the neighbor connections though. :(
-    for {:ok, source} <- pidList do
-      addingNeighbors(topology, pidList, source)
-    end
+    # for {:ok, source} <- pidList do
+    #   addingNeighbors(topology, pidList, source)
+    # end
     pidListWithoutAtom = []
     pidListWithoutAtom = pidListWithoutAtom ++ Enum.map(pidList, fn(x) ->
       # IO.inspect x
