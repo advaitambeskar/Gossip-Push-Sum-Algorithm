@@ -12,22 +12,38 @@ defmodule Neighbor do
         pid2idx = Map.new(Enum.zip(pid_list, 0..length(pid_list)-1))
         n = length(pid_list) 
         cond do
-            topology == "honeycomb"  or topology == "randhoneycomb" ->
+            topology == "honeycomb" ->
                 if rem(n, 6) != 0 or :math.pow(:math.sqrt(div(n, 6)), 2) * 6 |> round != n do
                     {:stop, "The number of nodes is not 6 * t^2"}
                 else
                     t = :math.sqrt(div(n, 6)) |> round 
                     honeycomb_idxes =  get_honeycomb_indexes(t)
                     honeycomb_map = Map.new(Enum.zip(honeycomb_idxes, 0..n-1))
-                    {:ok, [pid_list, pid2idx, topology, honeycomb_idxes, honeycomb_map, []]}
+                    {:ok, [pid_list, pid2idx, topology, honeycomb_idxes, honeycomb_map, [], []]}
+                end
+            topology == "randhoneycomb" ->
+                if rem(n, 6) != 0 or :math.pow(:math.sqrt(div(n, 6)), 2) * 6 |> round != n do
+                    {:stop, "The number of nodes is not 6 * t^2"}
+                else
+                    t = :math.sqrt(div(n, 6)) |> round 
+                    honeycomb_idxes =  get_honeycomb_indexes(t)
+                    honeycomb_map = Map.new(Enum.zip(honeycomb_idxes, 0..n-1))
+                    random_half = Enum.shuffle(div(n,2)..n-1)
+                    random_pair = Map.new(Enum.zip(0..div(n,2)-1, random_half))
+                    reverse_pair = Map.new(Enum.zip(random_half, 0..div(n,2)-1))
+                    random_map = for i <- 0..n-1 do
+                        if i <= div(n,2)-1, do: random_pair[i], else: reverse_pair[i]
+                    end
+                    
+                    {:ok, [pid_list, pid2idx, topology, honeycomb_idxes, honeycomb_map, [], random_map]}
                 end
             topology == "rand2D" ->
                 rand_xs = Enum.map(1..n, fn _ -> :rand.uniform() end)
                 rand_ys = Enum.map(1..n, fn _ -> :rand.uniform() end)
                 rand_idxes = Enum.zip(rand_xs, rand_ys)
-                {:ok, [pid_list, pid2idx, topology, [], %{}, rand_idxes]}
+                {:ok, [pid_list, pid2idx, topology, [], %{}, rand_idxes, []]}
             true ->
-                {:ok, [pid_list, pid2idx, topology, [], %{}, []]}
+                {:ok, [pid_list, pid2idx, topology, [], %{}, [], []]}
             
         end
     end
@@ -43,7 +59,7 @@ defmodule Neighbor do
     end
 
     def handle_call({:get, node_pid}, _from, state) do
-        [pid_list, pid2idx, topology, honeycomb_idxes, honeycomb_map, rand_idxes] = state
+        [pid_list, pid2idx, topology, honeycomb_idxes, honeycomb_map, rand_idxes, random_map] = state
         idx = pid2idx[node_pid]
         len = length(pid_list)
         case topology do
@@ -115,8 +131,8 @@ defmodule Neighbor do
                                                             x+y+z>=1 and x+y+z<=2 end)
 
                 temp = Enum.map(nbs_idxes, fn x-> honeycomb_map[x] end)
+                temp = [Enum.at(random_map, idx) | temp]
                 nbs = Enum.map(temp, fn x->Enum.at(pid_list, x) end)
-                nbs = [Enum.random(pid_list) | nbs] 
                 {:reply, nbs, state}
 
               _ ->
