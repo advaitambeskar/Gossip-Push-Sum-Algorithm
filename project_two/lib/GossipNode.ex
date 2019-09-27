@@ -74,17 +74,21 @@ defmodule GossipNode do
         if (!state[:started]), do: start()
         # IO.inspect([self(), state[:cnt]])
         new_state = Keyword.update!(state, :cnt, fn cnt -> cnt+1 end)
-        if (new_state[:cnt] == 10) do
-            # IO.puts("received #{rumor} 10 times")
-            # IO.inspect(self())
-            new_state = Keyword.update!(new_state, :finished, fn _ -> true end)
-            ppid = state[:ppid]
-            send(ppid, {:finish, self()})
-            send(self(), :notify_exit)
-            # Process.exit(self(), :normal)
-            {:noreply, new_state}
+        if (!state[:finished]) do
+            if (new_state[:cnt] == 10) do
+                # IO.puts("received #{rumor} 10 times")
+                # IO.inspect(self())
+                new_state = Keyword.update!(new_state, :finished, fn _ -> true end)
+                ppid = state[:ppid]
+                send(ppid, {:finish, self()})
+                send(self(), :notify_exit)
+                # Process.exit(self(), :normal)
+                {:noreply, new_state}
+            else
+                {:noreply, new_state}
+            end
         else
-            {:noreply, new_state}
+            {:noreply, state}
         end
     end
 
