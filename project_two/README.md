@@ -4,6 +4,13 @@
 
 ## Installation
 
+## Compile
+mix escript.build
+
+## Run
+./project_two 1000 3Dtorus push-sum
+
+
 If [available in Hex](https://hex.pm/docs/publish), the package can be installed
 by adding `project_two` to your list of dependencies in `mix.exs`:
 

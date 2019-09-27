@@ -17,7 +17,7 @@ defmodule PushSumNode do
     def start() do
         send(self(), :start)
         :timer.sleep(Enum.random(1..100))
-        :timer.send_interval(100, :send)
+        :timer.send_interval(20, :send)
     end
 
     def handle_cast({:neighbor, nb_list}, state) do
@@ -52,9 +52,11 @@ defmodule PushSumNode do
                 # Process.exit(self(), :normal)
                 {:noreply, new_state}
             else
+                new_state = Keyword.update!(state, :w, fn w -> w/2 end)
+                new_state = Keyword.update!(new_state, :n, fn n -> n/2 end)
                 nb = Enum.random(nbs)
-                PushSumNode.receive(nb, state[:n], state[:w])
-                {:noreply, state}
+                PushSumNode.receive(nb, state[:n]/2, state[:w]/2)
+                {:noreply, new_state}
             end
         else
             {:noreply, state}
@@ -73,25 +75,33 @@ defmodule PushSumNode do
     def handle_cast({:receive, in_n, in_w}, state) do
         if (!state[:started]), do: start()
         # IO.inspect([self(), state[:cnt]])
-        if (state[:cnt] == 3) do
-            IO.puts("The ratio #{state[:n]/state[:w]} hasn't been changed for 3 iterations")
-            new_state = Keyword.update!(state, :finished, fn _ -> true end)
-            ppid = state[:ppid]
-            send(ppid, {:finish, self()})
-            send(self(), :notify_exit)
-            {:noreply, new_state}
-            # {:noreply, [n: n, w: w, nbs: alive_nbs, cnt: cnt+1, ppid: ppid]}
+        if (!state[:finished]) do
+            if (state[:cnt] == 3) do
+                if (state[:cnt] == 3) do
+                    IO.puts("The ratio #{state[:n]/state[:w]} hasn't been changed for 3 iterations")
+                else 
+                    IO.puts("w too small")
+                end
+                new_state = Keyword.update!(state, :finished, fn _ -> true end)
+                ppid = state[:ppid]
+                send(ppid, {:finish, self()})
+                send(self(), :notify_exit)
+                {:noreply, new_state}
+                # {:noreply, [n: n, w: w, nbs: alive_nbs, cnt: cnt+1, ppid: ppid]}
+            else
+                # IO.inspect([state[:n], state[:w], state[:n]/state[:w], state[:cnt]])
+                old_ratio = state[:n]/ state[:w]
+                [new_n, new_w] = [state[:n] + in_n, state[:w] + in_w]
+                new_ratio = new_n / new_w
+                cnt = if abs(new_ratio - old_ratio) < 1.0e-10, do: state[:cnt] + 1, else: 0
+                new_state = Keyword.update!(state, :n, fn n -> new_n end)
+                new_state = Keyword.update!(new_state, :w, fn w -> new_w end)
+                new_state = Keyword.update!(new_state, :cnt, fn _ -> cnt end)
+                    
+                {:noreply, new_state}
+            end
         else
-            IO.inspect([state[:n], state[:w], state[:n]/state[:w]])
-            old_ratio = state[:n]/ state[:w]
-            [new_n, new_w] = [(state[:n] + in_n) / 2, (state[:w] + in_w) / 2]
-            new_ratio = new_n / new_w
-            cnt = if abs(new_ratio - old_ratio) < 1.0e-10, do: state[:cnt] + 1, else: 0
-            new_state = Keyword.update!(state, :n, fn n -> new_n end)
-            new_state = Keyword.update!(new_state, :w, fn w -> new_w end)
-            new_state = Keyword.update!(new_state, :cnt, fn _ -> cnt end)
-                 
-            {:noreply, new_state}
+            {:noreply, state}
         end
     end
 
