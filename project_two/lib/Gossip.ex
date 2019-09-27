@@ -1,97 +1,10 @@
-defmodule GossipNode do
-    use GenServer
-
-    def start_link(rumor, ppid) do
-        GenServer.start_link(__MODULE__, [rumor: rumor, cnt: 0, nbs: [], ppid: ppid, started: false])
-    end
-
-    def init(state) do
-        {:ok, state}
-    end
-
-    def set_neighbors(pid, nbs) do
-        GenServer.cast(pid, {:neighbor, nbs})
-    end
-
-    # invoke sending periodically
-    def start() do
-        send(self(), :start)
-        :timer.sleep(Enum.random(1..3))
-        :timer.send_interval(10, :send)
-    end
-
-    def handle_cast({:neighbor, nb_list}, state) do
-        new_state = Keyword.update!(state, :nbs, fn _ -> nb_list end)
-        {:noreply, new_state}
-    end
-
-
-    def handle_info(:start, state) do
-        new_state = Keyword.update!(state, :started, fn _ -> true end)
-        {:noreply, new_state}
-    end
-
-    def receive(pid, rumor) do
-        GenServer.cast(pid, {:receive, rumor})
-    end
-
-    def delete_nb(pid, done_pid) do
-        GenServer.call(pid, {:delete_nb, done_pid}, :infinity)
-    end
-
-    def handle_info(:send, state) do
-        nbs = state[:nbs]
-        ppid = state[:ppid]
-        if (length(nbs) == 0) do
-            IO.inspect([self(), "exit because no neighbor is alive"])
-            send(ppid, :finish)
-            Process.exit(self(), :normal)
-        else
-            nb = Enum.random(nbs)
-            GossipNode.receive(nb, state[:rumor])
-            {:noreply, state}
-        end
-    end
-
-    def handle_call({:delete_nb, done_pid}, _from, state) do
-        nbs = state[:nbs]
-        new_nbs = if Enum.member?(nbs, done_pid), do: List.delete(nbs, done_pid), else: nbs
-        new_state = Keyword.update!(state, :nbs, fn _ -> new_nbs end)
-        {:reply, :done, new_state}
-    end
-
-    def handle_cast({:receive, rumor}, state) do
-        if (!state[:started]), do: start()
-        # IO.inspect([self(), state])
-        new_state = Keyword.update!(state, :cnt, fn cnt -> cnt+1 end)
-        if (new_state[:cnt] == 10) do
-            IO.puts("received #{rumor} 10 times")
-            IO.inspect(self())
-            ppid = state[:ppid]
-            send(ppid, :finish)
-            send(self(), :notify_exit)
-            # Process.exit(self(), :normal)
-        end
-        {:noreply, new_state}
-    end
-
-    def handle_info(:notify_exit, state) do
-        nbs = state[:nbs]
-        for nb <- nbs do
-            :done = delete_nb(nb, self())
-        end
-        {:noreply, state} 
-    end
-end
-
-
-defmodule GossipBoss do
+defmodule GossipMaster do
     def start_link(topology, node_num, rumor) do
-        GenServer.start_link(__MODULE__, [topology, node_num, rumor])
+        GenServer.start_link(__MODULE__, [topology, node_num, rumor], name: {:global, :gossip_boss})
     end
 
     defp round_up(topology, node_num) do
-        new_num = case topology do
+        case topology do
           "3Dtorus" ->
             fac = :math.pow(node_num, 1/3) |> round
             if :math.pow(fac, 3) != node_num do
@@ -138,8 +51,8 @@ defmodule GossipBoss do
         for pid <- pid_list do
             nbs = Neighbor.get_neighbors(neighbor_pid, pid)
             GossipNode.set_neighbors(pid, nbs)
-            IO.inspect(pid)
-            IO.inspect(length(nbs))
+            # IO.inspect(pid)
+            # IO.inspect(length(nbs))
         end
         {:ok, [topology, pid_list, rumor]}
     end
@@ -156,20 +69,33 @@ defmodule GossipBoss do
         # IO.inspect(node_pid)
         GossipNode.receive(node_pid, rumor)
 
-        receive do
-            :finish -> :first_converged
+        pid_rest = receive do
+            {:finish, pid} -> 
+                IO.puts("first one finished")
+                List.delete(pid_list, pid)
         end
         
-        Enum.reduce_while(1..length(pid_list)-1, 0, fn i,ret ->
+        # Enum.reduce_while(pid_rest, 0, fn pid,ret ->
+        #     receive do
+        #         {:finish, pid} -> 
+        #             IO.inspect([pid, "finished"])
+        #             {:cont, ret}
+        #         after 5000 -> 
+        #             IO.puts("timeout")
+        #             {:halt, ret}
+        #     end
+        # end)
+        Enum.map(pid_rest, fn pid -> 
+            # IO.inspect(pid)
             receive do
-                :finish -> {:cont, ret}
-                after 1000 -> {:halt, ret}
+                # when pid == in_pid
+                {:finish, in_pid} when pid == in_pid -> IO.inspect([in_pid, "finished"])
             end
         end)
 
         {:reply, [], state}
-
-        
     end
+
+    # def handle_call(:worker_finish)
 
 end
