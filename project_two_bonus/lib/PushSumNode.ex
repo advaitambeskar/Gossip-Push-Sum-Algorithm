@@ -90,7 +90,7 @@ defmodule PushSumNode do
         # IO.inspect([self(), state[:cnt]])
         if (!state[:finished]) do
             if (state[:cnt] == 3) do
-                IO.puts("The ratio #{state[:n]/state[:w]} hasn't been changed for 3 iterations")
+                # IO.puts("The ratio #{state[:n]/state[:w]} hasn't been changed for 3 iterations")
                 new_state = Keyword.update!(state, :finished, fn _ -> true end)
                 ppid = state[:ppid]
                 send(ppid, {:finish, self()})

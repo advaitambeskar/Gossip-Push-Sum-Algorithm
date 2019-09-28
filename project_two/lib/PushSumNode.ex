@@ -86,7 +86,7 @@ defmodule PushSumNode do
                 {:noreply, new_state}
                 # {:noreply, [n: n, w: w, nbs: alive_nbs, cnt: cnt+1, ppid: ppid]}
             else
-                # IO.inspect([state[:n], state[:w], state[:n]/state[:w], state[:cnt]])
+                # IO.inspect([state[:n], state[:w], state[:n]/state[:w]])
                 # old_ratio = state[:n]/ state[:w]
                 old_ratio = if state[:w] == 0.0, do: -1 , else: state[:n]/ state[:w]
                 [new_n, new_w] = [state[:n] + in_n, state[:w] + in_w]

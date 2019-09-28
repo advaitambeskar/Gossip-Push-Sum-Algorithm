@@ -6,7 +6,6 @@ defmodule PushSumMaster do
     def init(args) do
         [topology, node_num] = args
         node_num = Util.round_up(topology, node_num)
-        IO.puts(node_num)
         ppid = self()
         pid_list = Enum.map(1..node_num, fn node_id -> 
             {:ok, pid} = PushSumNode.start_link(node_id, 1.0, self())
@@ -56,16 +55,19 @@ defmodule PushSumMaster do
         #         {:finish, in_pid} -> IO.puts(i)
         #     end
         # end)
-        Enum.reduce_while(1..length(pid_rest), 0, fn i,ret ->
+
+        timeout = Enum.reduce_while(1..length(pid_rest), false, fn i,ret ->
             receive do
-                {:finish, pid} -> 
+                {:finish, _pid} -> 
                     # IO.inspect([pid, "finished"])
                     {:cont, ret}
                 after 10000 -> 
                     IO.puts("converge rate: #{(i+1)/ length(pid_list)}")
-                    {:halt, ret}
+                    true
+                    {:halt, true}
             end
         end)
+        if !timeout, do: IO.puts("converge rate: 1.0")
 
         {:reply, [], state}
     end

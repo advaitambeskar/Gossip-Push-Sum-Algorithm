@@ -3,12 +3,12 @@ defmodule Project_Two.MixProject do
 
   def project do
     [
-      app: :project_two,
+      app: :project_two_bonus,
       version: "0.1.0",
       elixir: "~> 1.9",
       start_permanent: Mix.env() == :prod,
-      deps: deps()
-      # ,escript: escript()
+      deps: deps(),
+      escript: escript()
     ]
   end
 

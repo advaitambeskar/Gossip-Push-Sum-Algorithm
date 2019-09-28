@@ -6,7 +6,6 @@ defmodule GossipMaster do
     def init(args) do
         [topology, node_num, rumor] = args
         node_num = Util.round_up(topology, node_num)
-        IO.puts(node_num)
         ppid = self()
         pid_list = Enum.map(1..node_num, fn node_id -> 
             {:ok, pid} = GossipNode.start_link(rumor, self())
