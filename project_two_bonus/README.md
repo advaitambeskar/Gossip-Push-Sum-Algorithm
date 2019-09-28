@@ -8,7 +8,7 @@
 mix escript.build
 
 ## Run
-./project_two 1000 3Dtorus push-sum
+./project_two_bonus 1000 3Dtorus push-sum 0.2
 
 
 If [available in Hex](https://hex.pm/docs/publish), the package can be installed
