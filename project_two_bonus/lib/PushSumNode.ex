@@ -26,12 +26,6 @@ defmodule PushSumNode do
         :timer.send_interval(20, :send)
     end
 
-
-    def handle_info(:start, state) do
-        new_state = Keyword.update!(state, :started, fn _ -> true end)
-        {:noreply, new_state}
-    end
-
     def receive(pid, n, w) do
         GenServer.cast(pid, {:receive, n, w})
     end
@@ -39,6 +33,24 @@ defmodule PushSumNode do
     def delete_nb(pid, done_pid) do
         GenServer.cast(pid, {:delete_nb, done_pid})
     end
+
+    def handle_cast(:shutdown, state) do
+        new_state = Keyword.update!(state, :finished, fn _ -> true end)
+        ppid = state[:ppid]
+        send(ppid, {:finish, self()})
+        send(self(), :notify_exit)
+        {:noreply, new_state}
+    end
+
+    def shutdown(pid) do
+        GenServer.cast(pid, :shutdown)
+    end
+
+    def handle_info(:start, state) do
+        new_state = Keyword.update!(state, :started, fn _ -> true end)
+        {:noreply, new_state}
+    end
+
 
     def handle_info(:send, state) do
         if (!state[:finished]) do
@@ -78,7 +90,7 @@ defmodule PushSumNode do
         # IO.inspect([self(), state[:cnt]])
         if (!state[:finished]) do
             if (state[:cnt] == 3) do
-                # IO.puts("The ratio #{state[:n]/state[:w]} hasn't been changed for 3 iterations")
+                IO.puts("The ratio #{state[:n]/state[:w]} hasn't been changed for 3 iterations")
                 new_state = Keyword.update!(state, :finished, fn _ -> true end)
                 ppid = state[:ppid]
                 send(ppid, {:finish, self()})

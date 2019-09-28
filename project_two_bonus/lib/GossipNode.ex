@@ -1,8 +1,8 @@
-defmodule PushSumNode do
+defmodule GossipNode do
     use GenServer
 
-    def start_link(n, w, ppid) do
-        GenServer.start_link(__MODULE__, [n: n, w: w, cnt: 0, nbs: [], ppid: ppid, started: false, finished: false])
+    def start_link(rumor, ppid) do
+        GenServer.start_link(__MODULE__, [rumor: rumor, cnt: 0, nbs: [], ppid: ppid, started: false, finished: false])
     end
 
     def init(state) do
@@ -13,17 +13,36 @@ defmodule PushSumNode do
         GenServer.cast(pid, {:neighbor, nbs})
     end
 
+    # invoke sending periodically
+    def start() do
+        send(self(), :start)
+        :timer.sleep(Enum.random(1..100))
+        :timer.send_interval(100, :send)
+    end
+
+    def receive(pid, rumor) do
+        GenServer.cast(pid, {:receive, rumor})
+    end
+
+    def shutdown(pid) do
+        GenServer.cast(pid, :shutdown)
+    end
+
+    def handle_cast(:shutdown, state) do
+        new_state = Keyword.update!(state, :finished, fn _ -> true end)
+        ppid = state[:ppid]
+        send(ppid, {:finish, self()})
+        send(self(), :notify_exit)
+        {:noreply, new_state}
+    end
+
+    def delete_nb(pid, done_pid) do
+        GenServer.cast(pid, {:delete_nb, done_pid})
+    end
 
     def handle_cast({:neighbor, nb_list}, state) do
         new_state = Keyword.update!(state, :nbs, fn _ -> nb_list end)
         {:noreply, new_state}
-    end
-
-     # invoke sending periodically
-     def start() do
-        send(self(), :start)
-        :timer.sleep(Enum.random(1..100))
-        :timer.send_interval(20, :send)
     end
 
 
@@ -32,13 +51,6 @@ defmodule PushSumNode do
         {:noreply, new_state}
     end
 
-    def receive(pid, n, w) do
-        GenServer.cast(pid, {:receive, n, w})
-    end
-
-    def delete_nb(pid, done_pid) do
-        GenServer.cast(pid, {:delete_nb, done_pid})
-    end
 
     def handle_info(:send, state) do
         if (!state[:finished]) do
@@ -53,11 +65,9 @@ defmodule PushSumNode do
                 # Process.exit(self(), :normal)
                 {:noreply, new_state}
             else
-                new_state = Keyword.update!(state, :w, fn w -> w/2 end)
-                new_state = Keyword.update!(new_state, :n, fn n -> n/2 end)
                 nb = Enum.random(nbs)
-                PushSumNode.receive(nb, state[:n]/2, state[:w]/2)
-                {:noreply, new_state}
+                GossipNode.receive(nb, state[:rumor])
+                {:noreply, state}
             end
         else
             {:noreply, state}
@@ -73,29 +83,21 @@ defmodule PushSumNode do
         {:noreply, new_state}
     end
 
-    def handle_cast({:receive, in_n, in_w}, state) do
+    def handle_cast({:receive, rumor}, state) do
         if (!state[:started]), do: start()
         # IO.inspect([self(), state[:cnt]])
+        new_state = Keyword.update!(state, :cnt, fn cnt -> cnt+1 end)
         if (!state[:finished]) do
-            if (state[:cnt] == 3) do
-                # IO.puts("The ratio #{state[:n]/state[:w]} hasn't been changed for 3 iterations")
-                new_state = Keyword.update!(state, :finished, fn _ -> true end)
+            if (new_state[:cnt] == 10) do
+                # IO.puts("received #{rumor} 10 times")
+                # IO.inspect(self())
+                new_state = Keyword.update!(new_state, :finished, fn _ -> true end)
                 ppid = state[:ppid]
                 send(ppid, {:finish, self()})
                 send(self(), :notify_exit)
+                # Process.exit(self(), :normal)
                 {:noreply, new_state}
-                # {:noreply, [n: n, w: w, nbs: alive_nbs, cnt: cnt+1, ppid: ppid]}
             else
-                # IO.inspect([state[:n], state[:w], state[:n]/state[:w], state[:cnt]])
-                # old_ratio = state[:n]/ state[:w]
-                old_ratio = if state[:w] == 0.0, do: -1 , else: state[:n]/ state[:w]
-                [new_n, new_w] = [state[:n] + in_n, state[:w] + in_w]
-                new_ratio = new_n / new_w
-                cnt = if abs(new_ratio - old_ratio) < 1.0e-10, do: state[:cnt] + 1, else: 0
-                new_state = Keyword.update!(state, :n, fn n -> new_n end)
-                new_state = Keyword.update!(new_state, :w, fn w -> new_w end)
-                new_state = Keyword.update!(new_state, :cnt, fn _ -> cnt end)
-                    
                 {:noreply, new_state}
             end
         else

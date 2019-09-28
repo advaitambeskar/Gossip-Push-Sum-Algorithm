@@ -10,17 +10,18 @@
 
 
 # test gossip
-# start_t = System.monotonic_time(:second)
+# start_t = System.monotonic_time(:microsecond)
 # {:ok, pid} = GossipMaster.start_link("3Dtorus", 1000, "some rumor")
-# GossipMaster.start(pid)
-# end_t = System.monotonic_time(:second)
+# GossipMaster.start(pid, 0.1)
+# end_t = System.monotonic_time(:microsecond)
 # IO.inspect(["running time:", end_t - start_t])
 
 
 
-# test pushsum
+# # test pushsum
 start_t = System.monotonic_time(:microsecond)
-{:ok, pid} = PushSumMaster.start_link("randhoneycomb", 10000)
-PushSumMaster.start(pid)
+{:ok, pid} = PushSumMaster.start_link("3Dtorus", 1000)
+pid_list = PushSumMaster.get_pid_list(pid)
+PushSumMaster.start(pid, 0.2)
 end_t = System.monotonic_time(:microsecond)
 IO.inspect(["running time:", end_t - start_t])
